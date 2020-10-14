@@ -27,28 +27,25 @@ res.send('<body><head><link href="favicon.ico" rel="shortcut icon" />\
     </p></body></html>');
 });
 
-app.get('/new-access-code', function(req, res) {
-    var customerid = req.params.customerid;
-    var cartid     = req.params.cartid;
-    // you can then look up customer and cart details in a db etc
-    // I'm hardcoding an email here for simplicity
-    amountinkobo = process.env.TEST_AMOUNT * 100;
-    if(isNaN(amountinkobo) || (amountinkobo < 2500)){
-        amountinkobo = 2500;
+app.post('/transaction/initialise', function(req, res) {
+    const { email, amount } = req.body;
+    const amountInKobo = amount * 100;
+    
+    if (isNaN(amountInKobo) || (amountInKobo < 2500)){
+        amountInKobo = 2500;
     }
-    email = process.env.SAMPLE_EMAIL;
 
     // all fields supported by this call can be gleaned from
     // https://developers.paystack.co/reference#initialize-a-transaction
     paystack.transaction.initialize({
         email:     email,        // a valid email address
-        amount:    amountinkobo, // only kobo and must be integer
+        amount:    amountInKobo, // only kobo and must be integer
         metadata:  {
             custom_fields:[
                 {
                     "display_name":"Started From",
                     "variable_name":"started_from",
-                    "value":"sample charge card backend"
+                    "value":"Charged from the backend"
                 },
                 {
                     "display_name":"Requested by",
@@ -67,13 +64,13 @@ app.get('/new-access-code', function(req, res) {
             res.send({error:error});
             return;
         }
-        res.send(body.data.access_code);
+        res.send(body.data);
     });
 });
 
-app.get('/verify/:reference', function(req, res) {
-    var reference = req.params.reference;
-
+app.get('/transaction/:reference', function(req, res) {
+    const { reference } = req.params;
+    
     paystack.transaction.verify(reference,
         function(error, body) {
         if(error){
